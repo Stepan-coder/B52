@@ -2,6 +2,9 @@ import os
 import hashlib
 from database import *
 from flask import Flask, render_template, request, redirect, jsonify
+from flask_cors import CORS
+from flask_cors.decorator import cross_origin
+
 
 db = DataBase(path=os.path.join(os.getcwd(), "db"), filename="b52.db")
 db.create_table(name="users",
@@ -25,24 +28,28 @@ db.create_table(name="company",
                 primary_key="id")
 
 app = Flask(__name__)
+CORS(app)
 
 
 # =========================================================USER=========================================================
 @app.route('/api/login', methods=['POST'])
+@cross_origin()
 def user_login():
     api_json = request.get_json()
     user = db_get_user(user_id=get_hash(mystring=api_json['email']))
     if user["password"] != api_json['password']:
         raise Exception("Password is incorrect!")
-    return jsonify({"id": user["id"],
-                    "username": user["user_name"],
-                    "first_name": user["first_name"],
-                    "second_name": user["last_name"],
-                    "patronymic": user["patronymic"],
-                    "phone": user["phone"]})
+    return jsonify({"token": "some_token",
+                    "user": {"id": user["id"],
+                             "username": user["user_name"],
+                             "first_name": user["first_name"],
+                             "second_name": user["last_name"],
+                             "patronymic": user["patronymic"],
+                             "phone": user["phone"]}})
 
 
 @app.route('/api/registerUser', methods=['POST'])
+@cross_origin()
 def register_user():
     api_json = request.get_json()
     user_id = get_hash(api_json['email'])
@@ -78,6 +85,7 @@ def register_user():
 
 
 @app.route('/api/user/<string:user_id>', methods=['GET'])
+@cross_origin()
 def get_user(user_id: str):
     if user_id not in db.get_table("users").get_all_UIDs():
         raise Exception('User not founded!')
@@ -91,6 +99,7 @@ def get_user(user_id: str):
 
 
 @app.route('/api/user/<string:user_id>/changePassword', methods=['POST'])
+@cross_origin()
 def change_password(user_id: str):
     if user_id not in db.get_table("users").get_all_UIDs():
         raise Exception('User not founded!')
@@ -100,7 +109,7 @@ def change_password(user_id: str):
     db.get_table("users").set_to_cell(key=user_id,
                                       column_name="password",
                                       new_value=request.args.get('new_password'))
-    return jsonify({"success": True})
+    return jsonify(success=True)
 
 
 def db_add_user(user_id: str, user_name: str, first_name: str, second_name: str, patronymic: str, company_name: str,
@@ -116,6 +125,7 @@ def db_get_user(user_id: str) -> Dict[str, Any]:
 
 # =========================================================COMPANY======================================================
 @app.route('/api/company/<string:company_id>', methods=['GET'])
+@cross_origin()
 def get_company_info(company_id: str):
     if company_id not in db.get_table("company").get_all_UIDs():
         raise Exception('Company not founded!')
@@ -126,6 +136,7 @@ def get_company_info(company_id: str):
 
 
 @app.route('/api/company/<string:company_id>/employees', methods=['GET'])
+@cross_origin()
 def get_company_employees(company_id: str):
     if company_id not in db.get_table("company").get_all_UIDs():
         raise Exception('Company not founded!')
@@ -137,6 +148,7 @@ def get_company_employees(company_id: str):
 
 
 @app.route('/api/company/<string:company_id>/employee/<string:user_id>', methods=['DELETE'])
+@cross_origin()
 def company_delete_employee(company_id: str, user_id: str):
     if company_id not in db.get_table("company").get_all_UIDs():
         raise Exception('Company not founded!')
@@ -159,8 +171,6 @@ def db_add_company(company_id: str, admin: str, company_name: str, employees: st
 def db_get_company(company_id: str) -> Dict[str, Any]:
     return {col: company_val for col, company_val in zip(db.get_table("company").get_column_names(),
                                                    db.get_table("company").get_row(key=str(company_id)))}
-
-# /api/company/{companyId}/registerEmployee
 
 
 def get_hash(mystring: str) -> str:
