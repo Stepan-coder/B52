@@ -1,9 +1,10 @@
 import os
 import hashlib
 from database import *
-from flask import Flask, render_template, request, redirect, jsonify
+from datetime import datetime
 from flask_cors import CORS
 from flask_cors.decorator import cross_origin
+from flask import Flask, render_template, request, redirect, jsonify
 
 
 db = DataBase(path=os.path.join(os.getcwd(), "db"), filename="b52.db")
@@ -29,6 +30,7 @@ db.create_table(name="company",
 
 app = Flask(__name__)
 CORS(app)
+tokens = {}
 
 
 # =========================================================USER=========================================================
@@ -39,13 +41,17 @@ def user_login():
     user = db_get_user(user_id=get_hash(mystring=api_json['email']))
     if user["password"] != api_json['password']:
         raise Exception("Password is incorrect!")
-    return jsonify({"token": "some_token",
+    token = user["id"] + get_hash(str(datetime.now()))
+    tokens[token] = user["id"]
+    return jsonify({"token": token,
                     "user": {"id": user["id"],
                              "username": user["user_name"],
                              "first_name": user["first_name"],
                              "second_name": user["last_name"],
                              "patronymic": user["patronymic"],
-                             "phone": user["phone"]}})
+                             "phone": user["phone"],
+                             "company": {"id": get_hash(user["company_name"]),
+                                         "name": user["company_name"]}}})
 
 
 @app.route('/api/registerUser', methods=['POST'])
