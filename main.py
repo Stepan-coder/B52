@@ -30,11 +30,9 @@ app = Flask(__name__)
 # =========================================================USER=========================================================
 @app.route('/api/login', methods=['POST'])
 def user_login():
-    email = request.args.get('email')
-    password = request.args.get('password')
-    user = {col: user_val for col, user_val in zip(db.get_table("users").get_column_names(),
-                                                   db.get_table("users").get_row(key=get_hash(mystring=email)))}
-    if user["password"] != password:
+    api_json = request.get_json()
+    user = db_get_user(user_id=get_hash(mystring=api_json['email']))
+    if user["password"] != api_json['password']:
         raise Exception("Password is incorrect!")
     return jsonify({"id": user["id"],
                     "username": user["user_name"],
@@ -46,14 +44,15 @@ def user_login():
 
 @app.route('/api/registerUser', methods=['POST'])
 def register_user():
-    user_id = get_hash(request.args.get('email'))
-    company_id = get_hash(request.args.get('company_name'))
+    api_json = request.get_json()
+    user_id = get_hash(api_json['email'])
+    company_id = get_hash(api_json['company_name'])
     if user_id in db.get_table("users").get_all_UIDs():
         raise Exception('User already exist!')
     if company_id not in db.get_table("company").get_all_UIDs():
         db_add_company(company_id=company_id,
                        admin=user_id,
-                       company_name=request.args.get('company_name'),
+                       company_name=api_json['company_name'],
                        employees=user_id,
                        licenses=1)
     else:
@@ -61,21 +60,21 @@ def register_user():
         db.get_table("company").set_to_cell(key=company_id, column_name="employees",
                                             new_value=",".join(employees + [user_id]))
     db_add_user(user_id=user_id,
-                user_name=request.args.get('first_name'),
-                first_name=request.args.get('first_name'),
-                second_name=request.args.get('second_name'),
-                patronymic=request.args.get('patronymic'),
-                company_name=request.args.get('company_name'),
-                phone=request.args.get('phone'),
-                email=request.args.get('email'),
-                password=request.args.get('password'))
+                user_name=api_json['first_name'],
+                first_name=api_json['first_name'],
+                second_name=api_json['second_name'],
+                patronymic=api_json['patronymic'],
+                company_name=api_json['company_name'],
+                phone=api_json['phone'],
+                email=api_json['email'],
+                password=api_json['password'])
 
     return jsonify({"id": user_id,
-                    "username": request.args.get('first_name'),
-                    "first_name": request.args.get('first_name'),
-                    "second_name": request.args.get('second_name'),
-                    "patronymic": request.args.get('patronymic'),
-                    "phone": request.args.get('phone')})
+                    "username": api_json['first_name'],
+                    "first_name": api_json['first_name'],
+                    "second_name": api_json['second_name'],
+                    "patronymic": api_json['patronymic'],
+                    "phone": api_json['phone']})
 
 
 @app.route('/api/user/<string:user_id>', methods=['GET'])
