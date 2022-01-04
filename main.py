@@ -153,6 +153,36 @@ def get_company_employees(company_id: str):
     return jsonify({items})
 
 
+@app.route('/api/company/<string:company_id>/registerEmployee', methods=['POST'])
+@cross_origin()
+def get_company_employees(company_id: str):
+    api_json = request.get_json()
+    if company_id not in db.get_table("company").get_all_UIDs():
+        raise Exception('Company not founded!')
+    company = db_get_company(company_id=company_id)['employees'].split(",")
+    if get_hash(api_json['email']) in company['employees'].split(","):
+        raise Exception("This user already exist")
+    db_add_user(user_id=get_hash(api_json['email']),
+                user_name=api_json['first_name'],
+                first_name=api_json['first_name'],
+                second_name=api_json['second_name'],
+                patronymic=api_json['patronymic'],
+                company_name=company['company_name'],
+                phone="8(000) 000-00-00",
+                email=api_json['email'],
+                password=get_hash(api_json['first_name']))
+    db.get_table("company").set_to_cell(key=company_id,
+                                        column_name="employees",
+                                        new_value=f"{company['employees']},{get_hash(api_json['email'])}")
+
+    return jsonify({"email": api_json['email'],
+                    "first_name": api_json['first_name'],
+                    "second_name": api_json['second_name'],
+                    "patronymic": api_json['patronymic'],
+                    "categories": [{} ],
+                    "password": get_hash(api_json['first_name'])})
+
+
 @app.route('/api/company/<string:company_id>/employee/<string:user_id>', methods=['DELETE'])
 @cross_origin()
 def company_delete_employee(company_id: str, user_id: str):
