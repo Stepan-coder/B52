@@ -217,6 +217,21 @@ def company_register_employee(company_id: str) -> jsonify:
                     "password": get_hash(api_json['first_name'])})
 
 
+@app.route('/api/company/<string:company_id>/employee/<string:user_id>', methods=['POST'])
+@cross_origin()
+def company_chenge_employee(company_id: str, user_id: str) -> jsonify:
+    api_json = request.get_json()
+    if company_id not in db.get_table("company").get_all_UIDs():
+        raise Exception('Company not founded!')
+    if user_id not in db.get_table("users").get_all_UIDs():
+        raise Exception('User not founded!')
+    db.get_table("user").set_to_cell(key=user_id, column_name="first_name", new_value=api_json['first_name'])
+    db.get_table("user").set_to_cell(key=user_id, column_name="second_name", new_value=api_json['second_name'])
+    db.get_table("user").set_to_cell(key=user_id, column_name="patronymic", new_value=api_json['patronymic'])
+    db.get_table("user").set_to_cell(key=user_id, column_name="email", new_value=api_json['email'])
+    return jsonify(success=True)
+
+
 @app.route('/api/company/<string:company_id>/employee/<string:user_id>', methods=['DELETE'])
 @cross_origin()
 def company_delete_employee(company_id: str, user_id: str) -> jsonify:
