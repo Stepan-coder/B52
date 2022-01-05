@@ -52,6 +52,7 @@ def user_login():
                              "second_name": user["last_name"],
                              "patronymic": user["patronymic"],
                              "phone": user["phone"],
+                             "userRole": "ADMIN" if user["id"] == company["admin"] else "EMPLOYEE",
                              "company": {"id": get_hash(user["company_name"]),
                                          "name": user["company_name"],
                                          "licenses": company["licenses"]}}})
@@ -95,6 +96,7 @@ def register_user():
                              "second_name": user["last_name"],
                              "patronymic": user["patronymic"],
                              "phone": user["phone"],
+                             "userRole": "ADMIN" if user["id"] == company["admin"] else "EMPLOYEE",
                              "company": {"id": get_hash(user["company_name"]),
                                          "name": user["company_name"],
                                          "licenses": company["licenses"]}}})
