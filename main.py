@@ -84,13 +84,20 @@ def register_user():
                 phone=api_json['phone'],
                 email=api_json['email'],
                 password=api_json['password'])
-
-    return jsonify({"id": user_id,
-                    "username": api_json['first_name'],
-                    "first_name": api_json['first_name'],
-                    "second_name": api_json['second_name'],
-                    "patronymic": api_json['patronymic'],
-                    "phone": api_json['phone']})
+    user = db_get_user(user_id=get_hash(mystring=api_json['email']))
+    company = db_get_company(get_hash(user['company_name']))
+    token = user_id + get_hash(str(datetime.now()))
+    tokens[token] = user_id
+    return jsonify({"token": token,
+                    "user": {"id": user["id"],
+                             "username": user["user_name"],
+                             "first_name": user["first_name"],
+                             "second_name": user["last_name"],
+                             "patronymic": user["patronymic"],
+                             "phone": user["phone"],
+                             "company": {"id": get_hash(user["company_name"]),
+                                         "name": user["company_name"],
+                                         "licenses": company["licenses"]}}})
 
 
 @app.route('/api/user/<string:user_id>', methods=['GET'])
