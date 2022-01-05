@@ -39,8 +39,10 @@ tokens = {}
 def user_login():
     api_json = request.get_json()
     user = db_get_user(user_id=get_hash(mystring=api_json['email']))
+    company = db_get_company(get_hash(user['company_name']))
     if user["password"] != api_json['password']:
         raise Exception("Password is incorrect!")
+
     token = user["id"] + get_hash(str(datetime.now()))
     tokens[token] = user["id"]
     return jsonify({"token": token,
@@ -51,7 +53,8 @@ def user_login():
                              "patronymic": user["patronymic"],
                              "phone": user["phone"],
                              "company": {"id": get_hash(user["company_name"]),
-                                         "name": user["company_name"]}}})
+                                         "name": user["company_name"],
+                                         "licenses": company["licenses"]}}})
 
 
 @app.route('/api/registerUser', methods=['POST'])
@@ -155,7 +158,7 @@ def get_company_employees(company_id: str):
 
 @app.route('/api/company/<string:company_id>/registerEmployee', methods=['POST'])
 @cross_origin()
-def get_company_employees(company_id: str):
+def company_register_employee(company_id: str):
     api_json = request.get_json()
     if company_id not in db.get_table("company").get_all_UIDs():
         raise Exception('Company not founded!')
