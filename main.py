@@ -173,6 +173,21 @@ def get_company_info(company_id: str) -> jsonify:
                     "licenses": company["licenses"]})
 
 
+@app.route('/api/company/<string:company_id>', methods=['POST'])
+@cross_origin()
+def change_company_info(company_id: str) -> jsonify:
+    api_json = request.get_json()
+    if company_id not in db.get_table("company").get_all_UIDs():
+        raise Exception('Company not founded!')
+    db.get_table("company").set_to_cell(key=company_id,
+                                        column_name="company_name",
+                                        new_value=api_json['name'])
+    db.get_table("company").set_to_cell(key=company_id,
+                                        column_name="licenses",
+                                        new_value=api_json['licenses'])
+    return jsonify(success=True)
+
+
 @app.route('/api/company/<string:company_id>/employees', methods=['GET'])
 @cross_origin()
 def get_company_employees(company_id: str) -> jsonify:
