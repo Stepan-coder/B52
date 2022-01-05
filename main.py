@@ -108,12 +108,17 @@ def get_user(user_id: str):
     if user_id not in db.get_table("users").get_all_UIDs():
         raise Exception('User not founded!')
     user = db_get_user(user_id)
+    company = db_get_company(get_hash(user['company_name']))
     return jsonify({"id": user["id"],
                     "username": user["user_name"],
                     "first_name": user["first_name"],
                     "second_name": user["last_name"],
                     "patronymic": user["patronymic"],
-                    "phone": user["phone"]})
+                    "phone": user["phone"],
+                    "userRole": "ADMIN" if user["id"] == company["admin"] else "EMPLOYEE",
+                    "company": {"id": get_hash(user["company_name"]),
+                                "name": user["company_name"],
+                                "licenses": company["licenses"]}})
 
 
 @app.route('/api/user/<string:user_id>/changePassword', methods=['POST'])
