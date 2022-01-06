@@ -604,7 +604,9 @@ def get_company_categories(company_id: str) -> jsonify:
     categories = []
     for category_id in list(filter(None, db.get_table("company").get_from_cell(company_id, "categories").split(","))):
         try:
-            categories.append(get_company_category(company_id=company_id, category_id=category_id).get_json())
+            category = get_company_category(company_id=company_id, category_id=category_id).get_json()
+            if 'message' not in category:
+                categories.append(category)
         except:
             pass
     return jsonify({"items": categories})
