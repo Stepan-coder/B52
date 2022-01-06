@@ -64,10 +64,10 @@ tokens = {}
 def user_login() -> jsonify:
     api_json = request.get_json()
     if get_hash(mystring=api_json['email']) not in db.get_table("users").get_all_UIDs():
-        raise Exception("There is no such user!")
+        return jsonify(message="There is no such user!")
     user = db.get_table("users").get_row(key=get_hash(mystring=api_json['email']))
     if user["password"] != api_json['password']:
-        raise Exception("Password is incorrect!")
+        return jsonify(message="Password is incorrect!")
     token = user["id"] + get_hash(str(datetime.now()))
     tokens[token] = user["id"]
     return jsonify({"user": get_user(user_id=user["id"]).get_json(),
@@ -81,7 +81,7 @@ def register_user() -> jsonify:
     user_id = get_hash(api_json['email'])
     company_id = get_hash(api_json['company_name'])
     if user_id in db.get_table("users").get_all_UIDs():
-        raise Exception('User already exist!')
+        return jsonify(message='User already exist!')
     if company_id not in db.get_table("company").get_all_UIDs():
         db_add_company(company_id=company_id,
                        admin=user_id,
@@ -116,7 +116,7 @@ def register_user() -> jsonify:
 @cross_origin()
 def get_user(user_id: str) -> jsonify:
     if user_id not in db.get_table("users").get_all_UIDs():
-        raise Exception('User not founded!')
+        return jsonify(message='User not founded!')
     user = db.get_table("users").get_row(user_id)
     company = db.get_table("company").get_row(get_hash(user['company_name']))
     return jsonify({"id": user["id"],
@@ -138,7 +138,7 @@ def get_user(user_id: str) -> jsonify:
 def change_password(user_id: str) -> jsonify:
     api_json = request.get_json()
     if user_id not in db.get_table("users").get_all_UIDs():
-        raise Exception('User not founded!')
+        return jsonify(message='User not founded!')
     if api_json['password'] != db.get_table("users").get_row(key=user_id)["password"]:
         return jsonify({"success": False})
     db.get_table("users").set_to_cell(key=user_id,
@@ -163,7 +163,7 @@ def get_user_short_name(user_id: str) -> str:
 @cross_origin()
 def get_company_info(company_id: str) -> jsonify:
     if company_id not in db.get_table("company").get_all_UIDs():
-        raise Exception('Company not founded!')
+        return jsonify(message='Company not founded!')
     company = db.get_table("company").get_row(key=company_id)
     return jsonify({"id": company["id"],
                     "name": company["company_name"],
@@ -175,7 +175,7 @@ def get_company_info(company_id: str) -> jsonify:
 def change_company_info(company_id: str) -> jsonify:
     api_json = request.get_json()
     if company_id not in db.get_table("company").get_all_UIDs():
-        raise Exception('Company not founded!')
+        return jsonify(message='Company not founded!')
     db.get_table("company").set_to_cell(key=company_id, column_name="company_name", new_value=api_json['name'])
     db.get_table("company").set_to_cell(key=company_id, column_name="licenses", new_value=api_json['licenses'])
     return jsonify(success=True)
@@ -185,7 +185,7 @@ def change_company_info(company_id: str) -> jsonify:
 @cross_origin()
 def get_company_employees(company_id: str) -> jsonify:
     if company_id not in db.get_table("company").get_all_UIDs():
-        raise Exception('Company not founded!')
+        return jsonify(message='Company not founded!')
     items = []
     print(db.get_table("company").get_row(key=company_id)['employees'].split(","))
     print(db.get_table("users").get_all_UIDs())
@@ -201,12 +201,12 @@ def get_company_employees(company_id: str) -> jsonify:
 def company_register_employee(company_id: str) -> jsonify:
     api_json = request.get_json()
     if company_id not in db.get_table("company").get_all_UIDs():
-        raise Exception('Company not founded!')
+        return jsonify(message='Company not founded!')
     if get_hash(api_json['email']) in db.get_table("users").get_all_UIDs():
-        raise Exception('This user already exist!')
+        return jsonify(message='This user already exist!')
     company = db.get_table("company").get_row(key=company_id)
     if get_hash(api_json['email']) in company['employees'].split(","):
-        raise Exception("This user already exist")
+        return jsonify(message="This user already exist")
     db_add_user(user_id=get_hash(api_json['email']),
                 user_name=api_json['first_name'],
                 first_name=api_json['first_name'],
@@ -236,9 +236,9 @@ def company_register_employee(company_id: str) -> jsonify:
 def company_chenge_employee(company_id: str, user_id: str) -> jsonify:
     api_json = request.get_json()
     if company_id not in db.get_table("company").get_all_UIDs():
-        raise Exception('Company not founded!')
+        return jsonify(message='Company not founded!')
     if user_id not in db.get_table("users").get_all_UIDs():
-        raise Exception('User not founded!')
+        return jsonify(message='User not founded!')
     for field in ["first_name", "second_name", "patronymic", "phone"]:
         db.get_table("users").set_to_cell(key=user_id, column_name=field, new_value=api_json[field])
     db.get_table("users").set_to_cell(key=user_id, column_name="categories",
@@ -250,12 +250,12 @@ def company_chenge_employee(company_id: str, user_id: str) -> jsonify:
 @cross_origin()
 def company_delete_employee(company_id: str, user_id: str) -> jsonify:
     if company_id not in db.get_table("company").get_all_UIDs():
-        raise Exception('Company not founded!')
+        return jsonify(message='Company not founded!')
     if user_id not in db.get_table("users").get_all_UIDs():
-        raise Exception('User not founded!')
+        return jsonify(message='User not founded!')
     employees = db.get_table("company").get_row(key=company_id)['employees'].split(",")
     if user_id not in employees:
-        raise Exception('User not founded in this company!')
+        return jsonify(message='User not founded in this company!')
     employees.remove(user_id)
     db.get_table("company").set_to_cell(key=company_id,
                                         column_name="employees",
@@ -276,7 +276,7 @@ def db_add_company(company_id: str, admin: str, company_name: str,
 def create_company_task(company_id: str) -> jsonify:
     api_json = request.get_json()
     if company_id not in db.get_table("company").get_all_UIDs():
-        raise Exception('Company not founded!')
+        return jsonify(message='Company not founded!')
     task_id = f"{company_id}{get_hash(str(datetime.now()))}"
     db_add_task(task_id=task_id,
                 description=api_json['description'],
@@ -296,9 +296,9 @@ def create_company_task(company_id: str) -> jsonify:
 @cross_origin()
 def get_company_task(company_id: str, task_id: str) -> jsonify:
     if company_id not in db.get_table("company").get_all_UIDs():
-        raise Exception('Company not founded!')
+        return jsonify(message='Company not founded!')
     if task_id not in db.get_table("company").get_row(key=company_id)['tasks'].split(","):
-        raise Exception('Task not founded!')
+        return jsonify(message='Task not founded!')
     task = db.get_table("task").get_row(key=task_id)
     return jsonify({"id": task['id'],
                     "description": task['description'],
@@ -316,13 +316,13 @@ def get_company_task(company_id: str, task_id: str) -> jsonify:
 def company_task_add_executor(company_id: str, task_id: str) -> jsonify:
     api_json = request.get_json()
     if company_id not in db.get_table("company").get_all_UIDs():
-        raise Exception('Company not founded!')
+        return jsonify(message='Company not founded!')
     if task_id not in db.get_table("task").get_all_UIDs():
-        raise Exception('Company not founded!')
+        return jsonify(message='Company not founded!')
     if task_id not in db.get_table("company").get_row(key=company_id)['tasks'].split(","):
-        raise Exception('Task not founded in this company!')
+        return jsonify(message='Task not founded in this company!')
     if task_id in db.get_table("users").get_row(key=api_json['user_id'])['tasks'].split(","):
-        raise Exception('The user has already been assigned responsibility for this task!')
+        return jsonify(message='The user has already been assigned responsibility for this task!')
     executors = db.get_table("task").get_from_cell(key=task_id, column_name="executor").split(",")
     db.get_table("task").set_to_cell(key=task_id,
                                      column_name="executor",
@@ -340,13 +340,13 @@ def company_task_add_executor(company_id: str, task_id: str) -> jsonify:
 def company_task_remove_executor(company_id: str, task_id: str) -> jsonify:
     api_json = request.get_json()
     if company_id not in db.get_table("company").get_all_UIDs():
-        raise Exception('Company not founded!')
+        return jsonify(message='Company not founded!')
     if task_id not in db.get_table("task").get_all_UIDs():
-        raise Exception('Company not founded!')
+        return jsonify(message='Company not founded!')
     if task_id not in db.get_table("company").get_row(key=company_id)['tasks'].split(","):
-        raise Exception('Task not founded in this company!')
+        return jsonify(message='Task not founded in this company!')
     if task_id not in db.get_table("users").get_row(key=api_json['user_id'])['tasks'].split(","):
-        raise Exception('The user was not assigned responsibility for this task!')
+        return jsonify(message='The user was not assigned responsibility for this task!')
     executors: list = db.get_table("task").get_from_cell(key=task_id, column_name="executor").split(",")
     user_tasks = db.get_table("users").get_from_cell(key=api_json['user_id'], column_name="tasks").split(",")
     executors.remove(api_json['user_id'])
@@ -364,7 +364,7 @@ def company_task_remove_executor(company_id: str, task_id: str) -> jsonify:
 @cross_origin()
 def get_company_tasks(company_id: str) -> jsonify:
     if company_id not in db.get_table("company").get_all_UIDs():
-        raise Exception('Company not founded!')
+        return jsonify(message='Company not founded!')
     company_tasks = []
     for task_id in db.get_table("company").get_from_cell(key=company_id, column_name="tasks").split(','):
         company_tasks.append(get_company_task(company_id, task_id).get_json())
@@ -375,9 +375,9 @@ def get_company_tasks(company_id: str) -> jsonify:
 @cross_origin()
 def get_company_user_tasks(company_id: str, user_id: str) -> jsonify:
     if company_id not in db.get_table("company").get_all_UIDs():
-        raise Exception('Company not founded!')
+        return jsonify(message='Company not founded!')
     if user_id not in db.get_table("users").get_all_UIDs():
-        raise Exception('User not founded!')
+        return jsonify(message='User not founded!')
     user_tasks = []
     for task_id in db.get_table("users").get_from_cell(key=user_id, column_name="tasks").split(','):
         user_tasks.append(get_company_task(company_id, task_id).get_json())
@@ -388,7 +388,7 @@ def get_company_user_tasks(company_id: str, user_id: str) -> jsonify:
 @cross_origin()
 def get_company_free_tasks(company_id: str) -> jsonify:
     if company_id not in db.get_table("company").get_all_UIDs():
-        raise Exception('Company not founded!')
+        return jsonify(message='Company not founded!')
     company_free_tasks = []
     for task_id in db.get_table("company").get_from_cell(key=company_id, column_name="tasks").split(','):
         this_task = get_company_task(company_id, task_id).get_json()
@@ -408,11 +408,11 @@ def db_add_task(task_id: str, description: str, location: str,
 def add_company_location(company_id: str) -> jsonify:
     api_json = request.get_json()
     if company_id not in db.get_table("company").get_all_UIDs():
-        raise Exception('Company not founded!')
+        return jsonify(message='Company not founded!')
     company = db.get_table("company").get_row(key=company_id)
     location_id = company_id + get_hash(api_json['name'])
     if location_id in str(company['locations']).split(","):
-        raise Exception("Locations already exist!")
+        return jsonify(message="Locations already exist!")
     db_add_location(location_id=location_id,
                     name=api_json['name'],
                     floor=api_json['floor'],
@@ -431,9 +431,9 @@ def add_company_location(company_id: str) -> jsonify:
 @cross_origin()
 def get_company_location(company_id: str, location_id: str) -> jsonify:
     if company_id not in db.get_table("company").get_all_UIDs():
-        raise Exception('Company not founded!')
+        return jsonify(message='Company not founded!')
     if location_id not in db.get_table("company").get_row(key=company_id)['locations'].split(","):
-        raise Exception('Location not founded!')
+        return jsonify(message='Location not founded!')
     location = db.get_table("location").get_row(key=location_id)
     return jsonify({"id": location['id'],
                     "name": location['name'],
@@ -446,9 +446,9 @@ def get_company_location(company_id: str, location_id: str) -> jsonify:
 def change_company_location(company_id: str, location_id: str) -> jsonify:
     api_json = request.get_json()
     if company_id not in db.get_table("company").get_all_UIDs():
-        raise Exception('Company not founded!')
+        return jsonify(message='Company not founded!')
     if location_id not in db.get_table("company").get_row(key=company_id)['locations'].split(","):
-        raise Exception('Location not founded!')
+        return jsonify(message='Location not founded!')
     for field in ["name", "floor", "room"]:
         db.get_table("location").set_to_cell(key=location_id, column_name=field, new_value=api_json[field])
     return jsonify(success=True)
@@ -459,7 +459,7 @@ def change_company_location(company_id: str, location_id: str) -> jsonify:
 def get_company_locations(company_id: str) -> jsonify:
     locations = []
     if company_id not in db.get_table("company").get_all_UIDs():
-        raise Exception('Company not founded!')
+        return jsonify(message='Company not founded!')
     for location_id in db.get_table("company").get_row(key=company_id)['locations'].split(","):
         location = db.get_table("location").get_row(key=location_id)
         locations.append({"id": location['id'],
@@ -474,7 +474,7 @@ def get_company_locations(company_id: str) -> jsonify:
 def get_company_grouped_locations(company_id: str) -> jsonify:
     locations = {}
     if company_id not in db.get_table("company").get_all_UIDs():
-        raise Exception('Company not founded!')
+        return jsonify(message='Company not founded!')
     for location_id in db.get_table("company").get_row(key=company_id)['locations'].split(","):
         location = db.get_table("location").get_row(key=location_id)
         if location['floor'] not in locations:
@@ -496,9 +496,9 @@ def db_add_location(location_id: str, name: str, floor: str, room: str) -> None:
 def set_company_category(company_id: str) -> jsonify:
     api_json = request.get_json()
     if company_id not in db.get_table("company").get_all_UIDs():
-        raise Exception('Company not founded!')
+        return jsonify(message='Company not founded!')
     if f"{company_id}{get_hash(api_json['name'])}" in db.get_table("category").get_all_UIDs():
-        raise Exception('This category is already exist!')
+        return jsonify(message='This category is already exist!')
     category_id = f"{company_id}{get_hash(api_json['name'])}"
     db_add_category(category_id=category_id, name=api_json['name'])
     company_categories = db.get_table("company").get_from_cell(key=company_id, column_name="categories").split(",")
@@ -513,9 +513,9 @@ def set_company_category(company_id: str) -> jsonify:
 @cross_origin()
 def get_company_category(company_id: str, category_id: str) -> jsonify:
     if company_id not in db.get_table("company").get_all_UIDs():
-        raise Exception('Company not founded!')
+        return jsonify(message='Company not founded!')
     if category_id not in db.get_table("category").get_all_UIDs():
-        raise Exception('Category not founded!')
+        return jsonify(message='Category not founded!')
     return jsonify({"id": category_id,
                     "name": db.get_table("category").get_from_cell(key=category_id, column_name='name')})
 
@@ -525,9 +525,9 @@ def get_company_category(company_id: str, category_id: str) -> jsonify:
 def change_company_category(company_id: str, category_id: str) -> jsonify:
     api_json = request.get_json()
     if company_id not in db.get_table("company").get_all_UIDs():
-        raise Exception('Company not founded!')
+        return jsonify(message='Company not founded!')
     if category_id not in db.get_table("category").get_all_UIDs():
-        raise Exception('Category not founded!')
+        return jsonify(message='Category not founded!')
     db.get_table("category").set_to_cell(key=category_id, column_name='name', new_value=api_json['name'])
     return jsonify(success=True)
 
@@ -536,7 +536,7 @@ def change_company_category(company_id: str, category_id: str) -> jsonify:
 @cross_origin()
 def get_company_categories(company_id: str) -> jsonify:
     if company_id not in db.get_table("company").get_all_UIDs():
-        raise Exception('Company not founded!')
+        return jsonify(message='Company not founded!')
     categories = []
     for category_id in db.get_table("company").get_from_cell(key=company_id, column_name="categories").split(","):
         categories.append(get_company_category(company_id=company_id, category_id=category_id).get_json())
