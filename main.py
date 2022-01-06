@@ -180,7 +180,7 @@ def get_company_info(company_id: str) -> jsonify:
                     "licenses": company["licenses"]})
 
 
-@app.route('/api/company/<string:company_id>', methods=['POST'])
+@app.route('/api/company/<string:company_id>', methods=['PATCH'])
 @cross_origin()
 def change_company_info(company_id: str) -> jsonify:
     if not check_api_key():
