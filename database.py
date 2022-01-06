@@ -105,7 +105,7 @@ class Table:
         if commit:
             self.__connector.commit()
 
-    def get_row(self, key: str) -> tuple:
+    def get_row(self, key: str) -> Dict[str, Any]:
         """
         Это метод получает значение "строки" из таблицы
         :param key: Идентификатор пользователя
@@ -114,7 +114,13 @@ class Table:
         if not self.__is_loaded:
             raise Exception(f"DataBase \'{self.__name}\' is not exist!. Try using \'Table.create_table\'.")
         self.__cursor.execute(f"SELECT * FROM {self.__name} WHERE {self.__primary_key} = '{key}'")
-        return self.__cursor.fetchall()[0]
+        request = self.__cursor.fetchall()
+        if len(request) == 0:
+            raise Exception("There are no values for this query!")
+        if len(request[0]) != len(self.get_column_names()):
+            raise Exception("The number of columns and values does not match!"
+                            f"{len(self.get_column_names())} columns and {len(request[0])} values were detected!")
+        return {column: value for column, value in zip(self.get_column_names(), request[0])}
 
     def delete_row(self, key: str) -> None:
         """
