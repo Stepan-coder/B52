@@ -398,7 +398,9 @@ def get_company_tasks(company_id: str) -> jsonify:
     company_tasks = []
     for task_id in list(filter(None, db.get_table("company").get_from_cell(company_id, "tasks").split(','))):
         try:
-            company_tasks.append(get_company_task(company_id, task_id).get_json())
+            this_task = get_company_task(company_id, task_id).get_json()
+            if 'message' not in this_task:
+                company_tasks.append(this_task)
         except:
             pass
     return jsonify({"items": company_tasks})
@@ -415,7 +417,12 @@ def get_company_user_tasks(company_id: str, user_id: str) -> jsonify:
         return jsonify(message='User not founded!'), 401
     user_tasks = []
     for task_id in list(filter(None, db.get_table("users").get_from_cell(user_id, "tasks").split(','))):
-        user_tasks.append(get_company_task(company_id, task_id).get_json())
+        try:
+            this_task = get_company_task(company_id, task_id).get_json()
+            if 'message' not in this_task:
+                user_tasks.append(this_task)
+        except:
+            pass
     return jsonify({"items": user_tasks})
 
 
@@ -430,8 +437,9 @@ def get_company_free_tasks(company_id: str) -> jsonify:
     for task_id in list(filter(None, db.get_table("company").get_from_cell(company_id, "tasks").split(','))):
         try:
             this_task = get_company_task(company_id, task_id).get_json()
-            if this_task['executor']["id"] == "":
-                company_free_tasks.append(this_task)
+            if 'message' not in this_task:
+                if this_task['executor']["id"] == "":
+                    company_free_tasks.append(this_task)
         except:
             pass
     return jsonify({"items": company_free_tasks})
@@ -511,10 +519,11 @@ def get_company_locations(company_id: str) -> jsonify:
     for location_id in db.get_table("company").get_row(key=company_id)['locations'].split(","):
         try:
             location = db.get_table("location").get_row(key=location_id)
-            locations.append({"id": location['id'],
-                              "name": location['name'],
-                              "floor": location['floor'],
-                              "room": location['room']})
+            if 'message' not in location:
+                locations.append({"id": location['id'],
+                                  "name": location['name'],
+                                  "floor": location['floor'],
+                                  "room": location['room']})
         except:
             pass
     return jsonify(locations)
@@ -531,12 +540,13 @@ def get_company_grouped_locations(company_id: str) -> jsonify:
     for location_id in list(filter(None, db.get_table("company").get_row(company_id)['locations'].split(","))):
         try:
             location = db.get_table("location").get_row(key=location_id)
-            if location['floor'] not in locations:
-                locations[location['floor']] = {"floor": location['floor'], "locations": []}
-            locations[location['floor']]["locations"].append({"id": location['id'],
-                                                              "name": location['name'],
-                                                              "floor": location['floor'],
-                                                              "room": location['room']})
+            if 'message' not in location:
+                if location['floor'] not in locations:
+                    locations[location['floor']] = {"floor": location['floor'], "locations": []}
+                locations[location['floor']]["locations"].append({"id": location['id'],
+                                                                  "name": location['name'],
+                                                                  "floor": location['floor'],
+                                                                  "room": location['room']})
         except:
             pass
     return jsonify([locations[floor] for floor in sorted(locations.keys())])
@@ -626,7 +636,7 @@ def get_hash(mystring: str) -> str:
 
 
 def check_api_key() -> bool:
-    return request.headers.get('API-KEY') == "6kcDRDO!0B<;^MCM=bv'jyMO?(R)c/j0YIpx[>!Q*%kX;&99B^'xgQ_=}}R-5:faezakme1"
+    return request.headers.get('API-KEY') == "6kcDRDO!0B<;^MCM=bv'jyMO?(R)c/j0YIpx[>!Q*%kX;&99B^'xgQ_=}}R-5:fkme1"
 
 
 if __name__ == '__main__':
