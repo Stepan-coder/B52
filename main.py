@@ -247,7 +247,7 @@ def company_register_employee(company_id: str) -> jsonify:
                     "password": get_hash(api_json['first_name'])})
 
 
-@app.route('/api/company/<string:company_id>/employee/<string:user_id>', methods=['POST'])
+@app.route('/api/company/<string:company_id>/employee/<string:user_id>', methods=['PATCH'])
 @cross_origin()
 def company_chenge_employee(company_id: str, user_id: str) -> jsonify:
     if not check_api_key():
@@ -485,7 +485,7 @@ def get_company_location(company_id: str, location_id: str) -> jsonify:
                     "room": location['room']})
 
 
-@app.route('/api/company/<string:company_id>/location/<string:location_id>', methods=['POST'])
+@app.route('/api/company/<string:company_id>/location/<string:location_id>', methods=['PATCH'])
 @cross_origin()
 def change_company_location(company_id: str, location_id: str) -> jsonify:
     if not check_api_key():
@@ -580,7 +580,7 @@ def get_company_category(company_id: str, category_id: str) -> jsonify:
                     "name": db.get_table("category").get_from_cell(key=category_id, column_name='name')})
 
 
-@app.route('/api/company/<string:company_id>/category/<string:category_id>', methods=['POST'])
+@app.route('/api/company/<string:company_id>/category/<string:category_id>', methods=['PATCH'])
 @cross_origin()
 def change_company_category(company_id: str, category_id: str) -> jsonify:
     if not check_api_key():
