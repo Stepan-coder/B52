@@ -396,7 +396,7 @@ def get_company_tasks(company_id: str) -> jsonify:
     if company_id not in db.get_table("company").get_all_UIDs():
         return jsonify(message='Company not founded!'), 401
     company_tasks = []
-    for task_id in db.get_table("company").get_from_cell(key=company_id, column_name="tasks").split(','):
+    for task_id in list(filter(None, db.get_table("company").get_from_cell(company_id, "tasks").split(','))):
         try:
             company_tasks.append(get_company_task(company_id, task_id).get_json())
         except:
@@ -414,7 +414,7 @@ def get_company_user_tasks(company_id: str, user_id: str) -> jsonify:
     if user_id not in db.get_table("users").get_all_UIDs():
         return jsonify(message='User not founded!'), 401
     user_tasks = []
-    for task_id in db.get_table("users").get_from_cell(key=user_id, column_name="tasks").split(','):
+    for task_id in list(filter(None, db.get_table("users").get_from_cell(user_id, "tasks").split(','))):
         user_tasks.append(get_company_task(company_id, task_id).get_json())
     return jsonify({"items": user_tasks})
 
@@ -427,7 +427,7 @@ def get_company_free_tasks(company_id: str) -> jsonify:
     if company_id not in db.get_table("company").get_all_UIDs():
         return jsonify(message='Company not founded!'), 401
     company_free_tasks = []
-    for task_id in db.get_table("company").get_from_cell(key=company_id, column_name="tasks").split(','):
+    for task_id in list(filter(None, db.get_table("company").get_from_cell(company_id, "tasks").split(','))):
         try:
             this_task = get_company_task(company_id, task_id).get_json()
             if this_task['executor']["id"] == "":
@@ -528,7 +528,7 @@ def get_company_grouped_locations(company_id: str) -> jsonify:
     locations = {}
     if company_id not in db.get_table("company").get_all_UIDs():
         return jsonify(message='Company not founded!'), 401
-    for location_id in db.get_table("company").get_row(key=company_id)['locations'].split(","):
+    for location_id in list(filter(None, db.get_table("company").get_row(company_id)['locations'].split(","))):
         try:
             location = db.get_table("location").get_row(key=location_id)
             if location['floor'] not in locations:
@@ -602,7 +602,7 @@ def get_company_categories(company_id: str) -> jsonify:
     if company_id not in db.get_table("company").get_all_UIDs():
         return jsonify(message='Company not founded!'), 401
     categories = []
-    for category_id in db.get_table("company").get_from_cell(key=company_id, column_name="categories").split(","):
+    for category_id in list(filter(None, db.get_table("company").get_from_cell(company_id, "categories").split(","))):
         try:
             categories.append(get_company_category(company_id=company_id, category_id=category_id).get_json())
         except:
@@ -624,7 +624,7 @@ def get_hash(mystring: str) -> str:
 
 
 def check_api_key() -> bool:
-    return request.headers.get('API-KEY') == "6kcDRDO!0B<;^MCM=bv'jyMO?(R)c/j0YIpx[>!Q*%kX;&99B^'xgQ_=}}R-5:f"
+    return request.headers.get('API-KEY') == "6kcDRDO!0B<;^MCM=bv'jyMO?(R)c/j0YIpx[>!Q*%kX;&99B^'xgQ_=}}R-5:faezakme"
 
 
 if __name__ == '__main__':
