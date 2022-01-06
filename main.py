@@ -626,7 +626,7 @@ def get_hash(mystring: str) -> str:
 
 
 def check_api_key() -> bool:
-    return request.headers.get('API-KEY') == "6kcDRDO!0B<;^MCM=bv'jyMO?(R)c/j0YIpx[>!Q*%kX;&99B^'xgQ_=}}R-5:faezakme"
+    return request.headers.get('API-KEY') == "6kcDRDO!0B<;^MCM=bv'jyMO?(R)c/j0YIpx[>!Q*%kX;&99B^'xgQ_=}}R-5:faezakme1"
 
 
 if __name__ == '__main__':
