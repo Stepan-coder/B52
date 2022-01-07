@@ -215,7 +215,7 @@ def get_company_employees(company_id: str) -> jsonify:
     for employ in db.get_table("company").get_row(key=company_id)['employees'].split(","):
         try:
             user = db.get_table("users").get_row(key=employ)
-            items.append({"id": user["id"], "full_name": user["first_name"]})
+            items.append({"id": user["id"], "full_name": get_user_short_name(user["id"])})
         except:
             pass
     return jsonify({"items": items})
@@ -258,7 +258,7 @@ def company_register_employee(company_id: str) -> jsonify:
                                    for category_id in list(filter(None, api_json['categories']))],
                     "password": get_hash(api_json['first_name'])})
 
-# http://127.0.0.1:5000/api/company/eae58578e56f33aec8254793ce2f574e/task/eae58578e56f33aec8254793ce2f574ea2ed12a40a8890a05bafce53ef16944c
+
 @app.route('/api/company/<string:company_id>/employee/<string:user_id>', methods=['PATCH'])
 @cross_origin()
 def company_chenge_employee(company_id: str, user_id: str) -> jsonify:
@@ -347,7 +347,7 @@ def get_company_task(company_id: str, task_id: str) -> jsonify:
                                  "name": db.get_table('category').get_from_cell(task['category'], "name")}
                     if task['category'] != "" else None,
                     "executor": {"id": task["executor"],
-                                 "short_name": get_user_short_name(task["executor"])}
+                                 "full_name": get_user_short_name(task["executor"])}
                     if task["executor"] != "" else None,
                     "create_at": task['create_at']})
 
@@ -635,7 +635,7 @@ def delete_company_category(company_id: str, category_id: str) -> jsonify:
         return jsonify(message='Company not founded!'), 401
     if category_id not in db.get_table("category").get_all_UIDs():
         return jsonify(message='Category not founded!'), 401
-    # db.get_table("category").delete_row(key=category_id)
+    db.get_table("category").delete_row(key=category_id)
     try:
         categories = list(filter(None, db.get_table("company").get_from_cell(company_id, "categories").split(",")))
         if category_id in categories:
@@ -644,7 +644,6 @@ def delete_company_category(company_id: str, category_id: str) -> jsonify:
                                             new_value=",".join(list(filter(None, categories))))
     except:
         pass
-
     employees = db.get_table("company").get_from_cell(key=company_id, column_name="employees").split(",")
     for user_id in list(filter(None, employees)):
         user_categories = db.get_table("users").get_from_cell(key=user_id, column_name="categories").split(",")
