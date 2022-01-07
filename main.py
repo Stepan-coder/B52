@@ -455,7 +455,8 @@ def get_company_free_tasks(company_id: str) -> jsonify:
         try:
             this_task = get_company_task(company_id, task_id).get_json()
             if 'message' not in this_task:
-                if this_task['executor']["id"] == "" or this_task['executor']["id"] is None:
+                if this_task['executor'] != "" or this_task['executor'] is None or \
+                        this_task['executor']["id"] == "" or this_task['executor']["id"] is None:
                     company_free_tasks.append(this_task)
         except:
             pass
