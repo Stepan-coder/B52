@@ -137,7 +137,7 @@ def get_user(user_id: str) -> jsonify:
                     "categories": [get_company_category(company['id'], category_id)
                                    for category_id in list(filter(None, user['categories'].split(",")))],
                     "user_role": "ADMIN" if user["id"] == company["admin"] else "EMPLOYEE",
-                    "company": {"id": get_hash(user["email"]),
+                    "company": {"id": get_hash(user["company_name"]),
                                 "name": user["company_name"],
                                 "licenses": company["licenses"]}})
 
