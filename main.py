@@ -679,8 +679,8 @@ def delete_company_category(company_id: str, category_id: str) -> jsonify:
                                           column_name="categories",
                                           new_value=",".join(list(filter(None, user_categories))))
 
-    for tasks_id in db.get_table("company").get_from_cell(key=company_id, column_name="categories").split(","):
-        db.get_table("users").set_to_cell(key=tasks_id, column_name="categories", new_value="")
+    for tasks_id in db.get_table("company").get_from_cell(key=company_id, column_name="tasks").split(","):
+        db.get_table("task").set_to_cell(key=tasks_id, column_name="categories", new_value="")
     return jsonify(success=True)
 
 
