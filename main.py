@@ -341,8 +341,7 @@ def get_company_task(company_id: str, task_id: str) -> jsonify:
     return jsonify({"id": task['id'],
                     "description": task['description'],
                     "location": {"id": task['location'],
-                                 "name": db.get_table("location").get_row(key=task['location'])['name']}
-                    if task['location'] != "" else None,
+                                 "name": db.get_table("location").get_row(key=task['location'])['name']},
                     "status": task['status'],
                     "category": {"id": task["category"],
                                  "name": db.get_table('category').get_from_cell(task['category'], "name")}
