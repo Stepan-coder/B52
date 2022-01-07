@@ -336,8 +336,8 @@ def get_company_task(company_id: str, task_id: str) -> jsonify:
                                  "name": db.get_table("location").get_row(key=task['location'])['name']},
                     "status": task['status'],
                     "category": task['category'],
-                    "executor": {"id": task["executor"] if task["executor"] != "" else None,
-                                 "short_name": get_user_short_name(task["executor"]) if task["executor"] != "" else None},
+                    "executor": {"id": task["executor"], "short_name": get_user_short_name(task["executor"])}
+                           if task["executor"] != "" else None,
                     "create_at": task['create_at']})
 
 
@@ -566,6 +566,7 @@ def get_company_grouped_locations(company_id: str) -> jsonify:
     return jsonify([locations[floor] for floor in sorted(locations.keys())])
 
 
+# def add_location()
 def db_add_location(location_id: str, name: str, floor: str, room: str, url: str) -> None:
     db.get_table("location").add_row(row=[location_id, name, floor, room, url])
 
