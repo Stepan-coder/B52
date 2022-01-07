@@ -374,7 +374,7 @@ def set_company_task(company_id: str, task_id: str) -> jsonify:
                                      new_value=api_json["category"]['id'] if api_json["category"] is not None else "")
     db.get_table("task").set_to_cell(key=task_id,
                                      column_name="location",
-                                     new_value=api_json["executor"]['id'] if api_json["executor"] is not None else "")
+                                     new_value=api_json["location"]['id'] if api_json["location"] is not None else "")
     return get_company_task(company_id=company_id, task_id=task_id).get_json()
 
 
