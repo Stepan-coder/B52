@@ -46,7 +46,7 @@ db.create_table(name="task",
 db.create_table(name="location",
                 labels={"id": DBType.TEXT,
                         "name": DBType.TEXT,
-                        "floor": DBType.TEXT,
+                        "floor": DBType.INTEGER,
                         "room": DBType.TEXT,
                         "url": DBType.TEXT},
                 primary_key="id")
@@ -633,6 +633,16 @@ def get_company_categories(company_id: str) -> jsonify:
         except:
             pass
     return jsonify({"items": categories})
+
+
+@app.route('/images/<int:pid>.jpg')
+def get_image(pid):
+    image_binary = read_image(pid)
+    response = make_response(image_binary)
+    response.headers.set('Content-Type', 'image/jpeg')
+    response.headers.set(
+        'Content-Disposition', 'attachment', filename='%s.jpg' % pid)
+    return response
 
 
 def db_add_category(category_id: str, name: str) -> None:
