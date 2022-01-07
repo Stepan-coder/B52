@@ -62,7 +62,6 @@ tokens = {}
 hostname = "http://127.0.0.1:5000/"
 
 
-
 # =========================================================USER=========================================================
 @app.route('/api/login', methods=['POST'])
 @cross_origin()
@@ -338,10 +337,12 @@ def get_company_task(company_id: str, task_id: str) -> jsonify:
     if task_id not in db.get_table("company").get_row(key=company_id)['tasks'].split(","):
         return jsonify(message='Task not founded in this company!'), 401
     task = db.get_table("task").get_row(key=task_id)
+
     return jsonify({"id": task['id'],
                     "description": task['description'],
                     "location": {"id": task['location'],
-                                 "name": db.get_table("location").get_row(key=task['location'])['name']},
+                                 "name": db.get_table("location").get_row(key=task['location'])['name']}
+                    if task['location'] != "" else None,
                     "status": task['status'],
                     "category": {"id": task["category"],
                                  "name": db.get_table('category').get_from_cell(task['category'], "name")}
@@ -362,6 +363,7 @@ def set_company_task(company_id: str, task_id: str) -> jsonify:
         return jsonify(message='Company not founded!'), 401
     if task_id not in db.get_table("task").get_all_UIDs():
         return jsonify(message='Task not founded!'), 401
+    print()
     db.get_table("task").set_to_cell(key=task_id, column_name="description", new_value=api_json['description'])
     db.get_table("task").set_to_cell(key=task_id, column_name="status", new_value=api_json['status'])
     db.get_table("task").set_to_cell(key=task_id, column_name="create_at", new_value=api_json['create_at'])
@@ -680,7 +682,7 @@ def delete_company_category(company_id: str, category_id: str) -> jsonify:
                                           new_value=",".join(list(filter(None, user_categories))))
 
     for tasks_id in db.get_table("company").get_from_cell(key=company_id, column_name="tasks").split(","):
-        db.get_table("task").set_to_cell(key=tasks_id, column_name="categories", new_value="")
+        db.get_table("task").set_to_cell(key=tasks_id, column_name="category", new_value="")
     return jsonify(success=True)
 
 
