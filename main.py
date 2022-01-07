@@ -336,8 +336,8 @@ def get_company_task(company_id: str, task_id: str) -> jsonify:
                                  "name": db.get_table("location").get_row(key=task['location'])['name']},
                     "status": task['status'],
                     "category": task['category'],
-                    "executor": {"id": task["executor"],
-                                 "short_name": get_user_short_name(task["executor"]) if task["executor"] != "" else ""},
+                    "executor": {"id": task["executor"] if task["executor"] != "" else None,
+                                 "short_name": get_user_short_name(task["executor"]) if task["executor"] != "" else None},
                     "create_at": task['create_at']})
 
 
@@ -639,20 +639,9 @@ def get_company_categories(company_id: str) -> jsonify:
 @app.route('/api/get_image/<string:image>.png', methods=['GET'])
 @cross_origin()
 def get_image(image: str) -> send_file:
-    if not check_api_key():
-        return jsonify(message="Invalid API-KEY"), 401
     if f"{image}.png" not in os.listdir(os.path.join(os.getcwd(), "qrcodes")):
         return jsonify(message='Image not founded!'), 401
     return send_file(os.path.join(os.getcwd(), "qrcodes", f"{image}.png"), mimetype='image/png')
-
-
-# def get_image(pid) -> response:
-#     image_binary = Image.open(pid)
-#     response = make_response(image_binary)
-#     response.headers.set('Content-Type', 'image/jpeg')
-#     response.headers.set(
-#         'Content-Disposition', 'attachment', filename='%s.jpg' % pid)
-#     return response
 
 
 def db_add_category(category_id: str, name: str) -> None:
