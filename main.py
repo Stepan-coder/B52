@@ -480,7 +480,7 @@ def get_company_free_tasks(company_id: str) -> jsonify:
         try:
             this_task = get_company_task(company_id, task_id).get_json()
             if 'message' not in this_task:
-                if this_task['executor'] != "" or this_task['executor'] is None or \
+                if this_task['executor'] == "" or this_task['executor'] is None or \
                         this_task['executor']["id"] == "" or this_task['executor']["id"] is None:
                     company_free_tasks.append(this_task)
         except:
@@ -679,7 +679,7 @@ def delete_company_category(company_id: str, category_id: str) -> jsonify:
                                           column_name="categories",
                                           new_value=",".join(list(filter(None, user_categories))))
 
-    for tasks_id in db.get_table("company").get_from_cell(key=company_id, column_name="tasks").split(","):
+    for tasks_id in db.get_table("company").get_from_cell(key=company_id, column_name="categories").split(","):
         db.get_table("users").set_to_cell(key=tasks_id, column_name="categories", new_value="")
     return jsonify(success=True)
 
