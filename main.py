@@ -2,10 +2,11 @@ import os
 import hashlib
 from qrme import *
 from database import *
-from datetime import datetime
+from PIL import Image
 from flask_cors import CORS
+from datetime import datetime
 from flask_cors.decorator import cross_origin
-from flask import Flask, render_template, request, redirect, jsonify
+from flask import Flask, render_template, request, redirect, jsonify, send_file
 
 db = DataBase(path=os.path.join(os.getcwd(), "db"), filename="b52.db")
 db.create_table(name="users",
@@ -68,9 +69,9 @@ def user_login() -> jsonify:
     if not check_api_key():
         return jsonify(message="Invalid API-KEY"), 401
     api_json = request.get_json()
-    if get_hash(mystring=api_json['email']) not in db.get_table("users").get_all_UIDs():
+    if get_hash(my_string=api_json['email']) not in db.get_table("users").get_all_UIDs():
         return jsonify(message="There is no such user!"), 401
-    user = db.get_table("users").get_row(key=get_hash(mystring=api_json['email']))
+    user = db.get_table("users").get_row(key=get_hash(my_string=api_json['email']))
     if user["password"] != api_json['password']:
         return jsonify(message="Password is incorrect!"), 401
     token = user["id"] + get_hash(str(datetime.now()))
@@ -465,7 +466,7 @@ def add_company_location(company_id: str) -> jsonify:
     if company_id not in db.get_table("company").get_all_UIDs():
         return jsonify(message='Company not founded!'), 401
     company = db.get_table("company").get_row(key=company_id)
-    location_id = company_id + get_hash(api_json['name'])
+    location_id = company_id + get_hash(api_json['name']) + get_hash(str(datetime.now()))
     if location_id in str(company['locations']).split(","):
         return jsonify(message="Locations already exist!"), 401
     full_path = create_qrcode(data=f"{hostname}#/company/{company_id}/location/{location_id}/createTask",
@@ -635,9 +636,9 @@ def get_company_categories(company_id: str) -> jsonify:
     return jsonify({"items": categories})
 
 
-@app.route('/images/<int:pid>.jpg')
-def get_image(pid):
-    image_binary = read_image(pid)
+@app.route('/images/<int:qr_id>.jpg')
+def get_image(pid) -> response:
+    image_binary = Image.open(pid)
     response = make_response(image_binary)
     response.headers.set('Content-Type', 'image/jpeg')
     response.headers.set(
@@ -649,13 +650,13 @@ def db_add_category(category_id: str, name: str) -> None:
     db.get_table("category").add_row(row=[category_id, name])
 
 
-def get_hash(mystring: str) -> str:
+def get_hash(my_string: str) -> str:
     """
     Этот метод на вход получает строку (в нашем часном случае - почту) и хэширует её
-    :param mystring: Входная строка
+    :param my_string: Входная строка
     :return:
     """
-    return hashlib.md5(mystring.encode()).hexdigest()
+    return hashlib.md5(my_string.encode()).hexdigest()
 
 
 def check_api_key() -> bool:
