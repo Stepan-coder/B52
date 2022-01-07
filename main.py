@@ -62,6 +62,7 @@ tokens = {}
 hostname = "http://127.0.0.1:5000/"
 
 
+
 # =========================================================USER=========================================================
 @app.route('/api/login', methods=['POST'])
 @cross_origin()
@@ -100,7 +101,7 @@ def register_user() -> jsonify:
                        locations="",
                        tasks="",
                        categories="",
-                       licenses=1)
+                       licenses=20)
     else:
         employees = str(db.get_table("company").get_from_cell(key=company_id, column_name="employees")).split(",")
         db.get_table("company").set_to_cell(key=company_id, column_name="employees",
@@ -116,6 +117,10 @@ def register_user() -> jsonify:
                 phone=api_json['phone'],
                 email=api_json['email'],
                 password=api_json['password'])
+    add_location(company_id=company_id,
+                 name="Example of name",
+                 floor="1",
+                 room="1")
     token = user_id + get_hash(str(datetime.now()))
     tokens[token] = user_id
     return jsonify({"user": get_user(user_id=user_id).get_json(),
@@ -137,7 +142,7 @@ def get_user(user_id: str) -> jsonify:
                     "second_name": user["second_name"],
                     "patronymic": user["patronymic"],
                     "phone": user["phone"],
-                    "categories": [get_company_category(company['id'], category_id)
+                    "categories": [get_company_category(company['id'], category_id).get_json()
                                    for category_id in list(filter(None, user['categories'].split(",")))],
                     "user_role": "ADMIN" if user["id"] == company["admin"] else "EMPLOYEE",
                     "company": {"id": get_hash(user["company_name"]),
@@ -327,17 +332,22 @@ def get_company_task(company_id: str, task_id: str) -> jsonify:
         return jsonify(message="Invalid API-KEY"), 401
     if company_id not in db.get_table("company").get_all_UIDs():
         return jsonify(message='Company not founded!'), 401
-    if task_id not in db.get_table("company").get_row(key=company_id)['tasks'].split(","):
+    if task_id not in db.get_table("task").get_all_UIDs():
         return jsonify(message='Task not founded!'), 401
+    if task_id not in db.get_table("company").get_row(key=company_id)['tasks'].split(","):
+        return jsonify(message='Task not founded in this company!'), 401
     task = db.get_table("task").get_row(key=task_id)
     return jsonify({"id": task['id'],
                     "description": task['description'],
                     "location": {"id": task['location'],
                                  "name": db.get_table("location").get_row(key=task['location'])['name']},
                     "status": task['status'],
-                    "category": task['category'],
-                    "executor": {"id": task["executor"], "short_name": get_user_short_name(task["executor"])}
-                           if task["executor"] != "" else None,
+                    "category": {"id": task["category"],
+                                 "name": db.get_table('category').get_from_cell(task['category'], "name")}
+                    if task['category'] != "" else None,
+                    "executor": {"id": task["executor"],
+                                 "short_name": get_user_short_name(task["executor"])}
+                    if task["executor"] != "" else None,
                     "create_at": task['create_at']})
 
 
@@ -465,27 +475,8 @@ def add_company_location(company_id: str) -> jsonify:
     api_json = request.get_json()
     if company_id not in db.get_table("company").get_all_UIDs():
         return jsonify(message='Company not founded!'), 401
-    company = db.get_table("company").get_row(key=company_id)
-    location_id = company_id + get_hash(api_json['name']) + get_hash(str(datetime.now()))
-    if location_id in str(company['locations']).split(","):
-        return jsonify(message="Locations already exist!"), 401
-    create_qrcode(data=f"{hostname}#/company/{company_id}/location/{location_id}/createTask",
-                  path_to_folder=os.path.join(os.getcwd(), "qrcodes"),
-                  filename=f"{location_id}.png")
-    db_add_location(location_id=location_id,
-                    name=api_json['name'],
-                    floor=api_json['floor'],
-                    room=api_json['room'],
-                    url=f"/api/get_image/{location_id}.png")
-    db.get_table('company').set_to_cell(key=company_id,
-                                        column_name="locations",
-                                        new_value=",".join(list(filter(None, company['locations'].split(",") +
-                                                                       [location_id]))))
-    return jsonify({"id": location_id,
-                    "name": api_json['name'],
-                    "floor": api_json['floor'],
-                    "room": api_json['room'],
-                    "url": f"/api/get_image/{location_id}.png"})
+    location_id = add_location(company_id, api_json['name'], api_json['floor'], api_json['room'])
+    return get_company_location(company_id=company_id, location_id=location_id).get_json()
 
 
 @app.route('/api/company/<string:company_id>/location/<string:location_id>', methods=['GET'])
@@ -566,7 +557,22 @@ def get_company_grouped_locations(company_id: str) -> jsonify:
     return jsonify([locations[floor] for floor in sorted(locations.keys())])
 
 
-# def add_location()
+def add_location(company_id: str, name: str, floor: str, room: str):
+    company = db.get_table("company").get_row(key=company_id)
+    location_id = company_id + get_hash(name) + get_hash(str(datetime.now()))
+    if location_id in str(company['locations']).split(","):
+        return jsonify(message="Locations already exist!"), 401
+    create_qrcode(data=f"{hostname}#/company/{company_id}/location/{location_id}/createTask",
+                  path_to_folder=os.path.join(os.getcwd(), "qrcodes"),
+                  filename=f"{location_id}.png")
+    db_add_location(location_id=location_id, name=name, floor=floor, room=room, url=f"/api/get_image/{location_id}.png")
+    db.get_table('company').set_to_cell(key=company_id,
+                                        column_name="locations",
+                                        new_value=",".join(list(filter(None, company['locations'].split(",") +
+                                                                       [location_id]))))
+    return location_id
+
+
 def db_add_location(location_id: str, name: str, floor: str, room: str, url: str) -> None:
     db.get_table("location").add_row(row=[location_id, name, floor, room, url])
 
@@ -616,6 +622,42 @@ def change_company_category(company_id: str, category_id: str) -> jsonify:
     if category_id not in db.get_table("category").get_all_UIDs():
         return jsonify(message='Category not founded!'), 401
     db.get_table("category").set_to_cell(key=category_id, column_name='name', new_value=api_json['name'])
+    return jsonify(success=True)
+
+
+@app.route('/api/company/<string:company_id>/category/<string:category_id>', methods=['DELETE'])
+@cross_origin()
+def delete_company_category(company_id: str, category_id: str) -> jsonify:
+    if not check_api_key():
+        return jsonify(message="Invalid API-KEY"), 401
+    if company_id not in db.get_table("company").get_all_UIDs():
+        return jsonify(message='Company not founded!'), 401
+    if category_id not in db.get_table("category").get_all_UIDs():
+        return jsonify(message='Category not founded!'), 401
+    try:
+        categories = list(filter(None, db.get_table("company").get_from_cell(company_id, "categories").split(",")))
+        if category_id in categories:
+            categories.remove(category_id)
+        db.get_table("company").set_to_cell(key=company_id, column_name="categories",
+                                            new_value=",".join(list(filter(None, categories))))
+    except:
+        pass
+
+    employees = db.get_table("company").get_from_cell(key=company_id, column_name="employees")
+    for user_id in list(filter(None, employees)):
+        try:
+            user_categories = list(filter(None, db.get_table("users").get_from_cell(
+                key=user_id, column_name="categories").split(",")))
+            if category_id in user_categories:
+                user_categories.remove(category_id)
+            db.get_table("users").set_to_cell(key=user_id,
+                                              column_name="categories",
+                                              new_value=",".join(list(filter(None, user_categories))))
+        except:
+            pass
+    tasks = db.get_table("company").get_from_cell(key=company_id, column_name="tasks")
+    for tasks_id in list(filter(None, tasks)):
+        db.get_table("users").set_to_cell(key=tasks_id, column_name="categories", new_value="")
     return jsonify(success=True)
 
 
