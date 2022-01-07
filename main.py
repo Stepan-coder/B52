@@ -1,5 +1,6 @@
 import os
 import hashlib
+from qrme import *
 from database import *
 from datetime import datetime
 from flask_cors import CORS
@@ -46,7 +47,8 @@ db.create_table(name="location",
                 labels={"id": DBType.TEXT,
                         "name": DBType.TEXT,
                         "floor": DBType.TEXT,
-                        "room": DBType.TEXT},
+                        "room": DBType.TEXT,
+                        "url": DBType.TEXT},
                 primary_key="id")
 
 db.create_table(name="category",
@@ -56,6 +58,7 @@ db.create_table(name="category",
 app = Flask(__name__)
 CORS(app)
 tokens = {}
+hostname = "http://127.0.0.1:5000/"
 
 
 # =========================================================USER=========================================================
@@ -134,7 +137,7 @@ def get_user(user_id: str) -> jsonify:
                     "categories": [get_company_category(company['id'], category_id)
                                    for category_id in list(filter(None, user['categories'].split(",")))],
                     "user_role": "ADMIN" if user["id"] == company["admin"] else "EMPLOYEE",
-                    "company": {"id": get_hash(user["company_name"]),
+                    "company": {"id": get_hash(user["email"]),
                                 "name": user["company_name"],
                                 "licenses": company["licenses"]}})
 
@@ -463,10 +466,14 @@ def add_company_location(company_id: str) -> jsonify:
     location_id = company_id + get_hash(api_json['name'])
     if location_id in str(company['locations']).split(","):
         return jsonify(message="Locations already exist!"), 401
+    full_path = create_qrcode(data=f"{hostname}#/company/{company_id}/location/{location_id}/createTask",
+                              path_to_folder=os.path.join(os.getcwd(), "qrcodes"),
+                              filename=f"{location_id}.png")
     db_add_location(location_id=location_id,
                     name=api_json['name'],
                     floor=api_json['floor'],
-                    room=api_json['room'])
+                    room=api_json['room'],
+                    url=full_path)
     db.get_table('company').set_to_cell(key=company_id,
                                         column_name="locations",
                                         new_value=",".join(list(filter(None, company['locations'].split(",") +
@@ -474,7 +481,8 @@ def add_company_location(company_id: str) -> jsonify:
     return jsonify({"id": location_id,
                     "name": api_json['name'],
                     "floor": api_json['floor'],
-                    "room": api_json['room']})
+                    "room": api_json['room'],
+                    "url": full_path})
 
 
 @app.route('/api/company/<string:company_id>/location/<string:location_id>', methods=['GET'])
@@ -490,7 +498,8 @@ def get_company_location(company_id: str, location_id: str) -> jsonify:
     return jsonify({"id": location['id'],
                     "name": location['name'],
                     "floor": location['floor'],
-                    "room": location['room']})
+                    "room": location['room'],
+                    "url": location['url']})
 
 
 @app.route('/api/company/<string:company_id>/location/<string:location_id>', methods=['PATCH'])
@@ -523,7 +532,8 @@ def get_company_locations(company_id: str) -> jsonify:
                 locations.append({"id": location['id'],
                                   "name": location['name'],
                                   "floor": location['floor'],
-                                  "room": location['room']})
+                                  "room": location['room'],
+                                  "url": location['url']})
         except:
             pass
     return jsonify(locations)
@@ -546,14 +556,15 @@ def get_company_grouped_locations(company_id: str) -> jsonify:
                 locations[location['floor']]["locations"].append({"id": location['id'],
                                                                   "name": location['name'],
                                                                   "floor": location['floor'],
-                                                                  "room": location['room']})
+                                                                  "room": location['room'],
+                                                                  "url": location['url']})
         except:
             pass
     return jsonify([locations[floor] for floor in sorted(locations.keys())])
 
 
-def db_add_location(location_id: str, name: str, floor: str, room: str) -> None:
-    db.get_table("location").add_row(row=[location_id, name, floor, room])
+def db_add_location(location_id: str, name: str, floor: str, room: str, url: str) -> None:
+    db.get_table("location").add_row(row=[location_id, name, floor, room, url])
 
 
 # =======================================================CATEGORY=======================================================
