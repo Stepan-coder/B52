@@ -249,7 +249,8 @@ def company_register_employee(company_id: str) -> jsonify:
                                         column_name="employees",
                                         new_value=",".join(list(filter(None, company['employees'].split(",") +
                                                                        [get_hash(api_json['email'])]))))
-    return jsonify({"email": api_json['email'],
+    return jsonify({"id": get_hash(api_json['email']),
+                    "email": api_json['email'],
                     "first_name": api_json['first_name'],
                     "second_name": api_json['second_name'],
                     "patronymic": api_json['patronymic'],
