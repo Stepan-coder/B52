@@ -89,6 +89,8 @@ def register_user() -> jsonify:
     company_id = get_hash(api_json['company_name'])
     if user_id in db.get_table("users").get_all_UIDs():
         return jsonify(message='User already exist!'), 401
+    if "@" not in api_json['email']:
+        return jsonify(message='The email must contain the "@" symbol!'), 401
     if company_id not in db.get_table("company").get_all_UIDs():
         db_add_company(company_id=company_id,
                        admin=user_id,
