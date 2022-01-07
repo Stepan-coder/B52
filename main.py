@@ -15,7 +15,7 @@ db.create_table(name="users",
                         "first_name": DBType.TEXT,
                         "second_name": DBType.TEXT,
                         "patronymic": DBType.TEXT,
-                        "company_name": DBType.TEXT,
+                        "company_id": DBType.TEXT,
                         "tasks": DBType.TEXT,
                         "categories": DBType.TEXT,
                         "phone": DBType.TEXT,
@@ -111,7 +111,7 @@ def register_user() -> jsonify:
                 first_name=api_json['first_name'],
                 second_name=api_json['second_name'],
                 patronymic=api_json['patronymic'],
-                company_name=api_json['company_name'],
+                company_id=company_id,
                 tasks="",
                 categories="",
                 phone=api_json['phone'],
@@ -135,7 +135,7 @@ def get_user(user_id: str) -> jsonify:
     if user_id not in db.get_table("users").get_all_UIDs():
         return jsonify(message='User not founded!'), 401
     user = db.get_table("users").get_row(user_id)
-    company = db.get_table("company").get_row(get_hash(user['company_name']))
+    company = db.get_table("company").get_row(user['company_id'])
     return jsonify({"id": user["id"],
                     "username": user["user_name"],
                     "first_name": user["first_name"],
@@ -145,8 +145,8 @@ def get_user(user_id: str) -> jsonify:
                     "categories": [get_company_category(company['id'], category_id).get_json()
                                    for category_id in list(filter(None, user['categories'].split(",")))],
                     "user_role": "ADMIN" if user["id"] == company["admin"] else "EMPLOYEE",
-                    "company": {"id": get_hash(user["company_name"]),
-                                "name": user["company_name"],
+                    "company": {"id": user['company_id'],
+                                "name": company["company_name"],
                                 "licenses": company["licenses"]}})
 
 
@@ -167,9 +167,9 @@ def change_password(user_id: str) -> jsonify:
 
 
 def db_add_user(user_id: str, user_name: str, first_name: str, second_name: str, patronymic: str,
-                company_name: str, tasks: str, categories: str, phone: str, email: str, password: str) -> None:
+                company_id: str, tasks: str, categories: str, phone: str, email: str, password: str) -> None:
     db.get_table("users").add_row(row=[user_id, user_name, first_name, second_name, patronymic,
-                                       company_name, tasks, categories, phone, email, password])
+                                       company_id, tasks, categories, phone, email, password])
 
 
 def get_user_short_name(user_id: str) -> str:
@@ -239,7 +239,7 @@ def company_register_employee(company_id: str) -> jsonify:
                 first_name=api_json['first_name'],
                 second_name=api_json['second_name'],
                 patronymic=api_json['patronymic'],
-                company_name=company['company_name'],
+                company_id=company_id,
                 tasks="",
                 categories=",".join(list(filter(None, api_json['categories']))),
                 phone="8 (000) 000-00-00",
@@ -258,7 +258,7 @@ def company_register_employee(company_id: str) -> jsonify:
                                    for category_id in list(filter(None, api_json['categories']))],
                     "password": get_hash(api_json['first_name'])})
 
-
+# http://127.0.0.1:5000/api/company/eae58578e56f33aec8254793ce2f574e/task/eae58578e56f33aec8254793ce2f574ea2ed12a40a8890a05bafce53ef16944c
 @app.route('/api/company/<string:company_id>/employee/<string:user_id>', methods=['PATCH'])
 @cross_origin()
 def company_chenge_employee(company_id: str, user_id: str) -> jsonify:
@@ -635,6 +635,7 @@ def delete_company_category(company_id: str, category_id: str) -> jsonify:
         return jsonify(message='Company not founded!'), 401
     if category_id not in db.get_table("category").get_all_UIDs():
         return jsonify(message='Category not founded!'), 401
+    # db.get_table("category").delete_row(key=category_id)
     try:
         categories = list(filter(None, db.get_table("company").get_from_cell(company_id, "categories").split(",")))
         if category_id in categories:
@@ -644,20 +645,16 @@ def delete_company_category(company_id: str, category_id: str) -> jsonify:
     except:
         pass
 
-    employees = db.get_table("company").get_from_cell(key=company_id, column_name="employees")
+    employees = db.get_table("company").get_from_cell(key=company_id, column_name="employees").split(",")
     for user_id in list(filter(None, employees)):
-        try:
-            user_categories = list(filter(None, db.get_table("users").get_from_cell(
-                key=user_id, column_name="categories").split(",")))
-            if category_id in user_categories:
-                user_categories.remove(category_id)
-            db.get_table("users").set_to_cell(key=user_id,
-                                              column_name="categories",
-                                              new_value=",".join(list(filter(None, user_categories))))
-        except:
-            pass
-    tasks = db.get_table("company").get_from_cell(key=company_id, column_name="tasks")
-    for tasks_id in list(filter(None, tasks)):
+        user_categories = db.get_table("users").get_from_cell(key=user_id, column_name="categories").split(",")
+        if category_id in user_categories:
+            user_categories.remove(category_id)
+        db.get_table("users").set_to_cell(key=user_id,
+                                          column_name="categories",
+                                          new_value=",".join(list(filter(None, user_categories))))
+
+    for tasks_id in db.get_table("company").get_from_cell(key=company_id, column_name="tasks").split(","):
         db.get_table("users").set_to_cell(key=tasks_id, column_name="categories", new_value="")
     return jsonify(success=True)
 
