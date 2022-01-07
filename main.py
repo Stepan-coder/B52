@@ -469,14 +469,14 @@ def add_company_location(company_id: str) -> jsonify:
     location_id = company_id + get_hash(api_json['name']) + get_hash(str(datetime.now()))
     if location_id in str(company['locations']).split(","):
         return jsonify(message="Locations already exist!"), 401
-    full_path = create_qrcode(data=f"{hostname}#/company/{company_id}/location/{location_id}/createTask",
-                              path_to_folder=os.path.join(os.getcwd(), "qrcodes"),
-                              filename=f"{location_id}.png")
+    create_qrcode(data=f"{hostname}#/company/{company_id}/location/{location_id}/createTask",
+                  path_to_folder=os.path.join(os.getcwd(), "qrcodes"),
+                  filename=f"{location_id}.png")
     db_add_location(location_id=location_id,
                     name=api_json['name'],
                     floor=api_json['floor'],
                     room=api_json['room'],
-                    url=full_path)
+                    url=f"/get_image/{location_id}.png")
     db.get_table('company').set_to_cell(key=company_id,
                                         column_name="locations",
                                         new_value=",".join(list(filter(None, company['locations'].split(",") +
@@ -485,7 +485,7 @@ def add_company_location(company_id: str) -> jsonify:
                     "name": api_json['name'],
                     "floor": api_json['floor'],
                     "room": api_json['room'],
-                    "url": full_path})
+                    "url": f"/get_image/{location_id}.png"})
 
 
 @app.route('/api/company/<string:company_id>/location/<string:location_id>', methods=['GET'])
@@ -636,14 +636,23 @@ def get_company_categories(company_id: str) -> jsonify:
     return jsonify({"items": categories})
 
 
-@app.route('/images/<int:qr_id>.jpg')
-def get_image(pid) -> response:
-    image_binary = Image.open(pid)
-    response = make_response(image_binary)
-    response.headers.set('Content-Type', 'image/jpeg')
-    response.headers.set(
-        'Content-Disposition', 'attachment', filename='%s.jpg' % pid)
-    return response
+@app.route('/get_image/<string:image>.png', methods=['GET'])
+@cross_origin()
+def get_image(image: str) -> send_file:
+    if not check_api_key():
+        return jsonify(message="Invalid API-KEY"), 401
+    if f"{image}.png" not in os.listdir(os.path.join(os.getcwd(), "qrcodes")):
+        return jsonify(message='Image not founded!'), 401
+    return send_file(os.path.join(os.getcwd(), "qrcodes", f"{image}.png"), mimetype='image/png')
+
+
+# def get_image(pid) -> response:
+#     image_binary = Image.open(pid)
+#     response = make_response(image_binary)
+#     response.headers.set('Content-Type', 'image/jpeg')
+#     response.headers.set(
+#         'Content-Disposition', 'attachment', filename='%s.jpg' % pid)
+#     return response
 
 
 def db_add_category(category_id: str, name: str) -> None:
