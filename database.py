@@ -24,7 +24,6 @@ class Table:
         self.__primary_key = None
         self.__table_labels = None
         self.__is_loaded = False
-        self.__lock = threading.Lock()
 
     def __nonzero__(self) -> bool:
         return self.__is_loaded
@@ -37,35 +36,28 @@ class Table:
         :param primary_key: Колонка, которая будет считаться у пользователя основной
         :return: None
         """
-        try:
-            self.__lock.acquire(True)
-            if self.__is_loaded:
-                raise Exception("DataBase is already exist!")
-            if primary_key is not None:
-                if primary_key not in labels:
-                    raise Exception(f"Column \'{primary_key}\' not exist in table labels!")
-                self.__primary_key = primary_key
-            else:
-                self.__primary_key = list(labels.keys())[0]
-            self.__cursor.execute(f"CREATE TABLE IF NOT EXISTS {self.__name} ({Table.__prep_labels(labels)})")
-            self.__connector.commit()
-            self.__table_labels = labels
-            self.__is_loaded = True
-        finally:
-            self.__lock.release()
+        if self.__is_loaded:
+            raise Exception("DataBase is already exist!")
+        if primary_key is not None:
+            if primary_key not in labels:
+                raise Exception(f"Column \'{primary_key}\' not exist in table labels!")
+            self.__primary_key = primary_key
+        else:
+            self.__primary_key = list(labels.keys())[0]
+        self.__cursor.execute(f"CREATE TABLE IF NOT EXISTS {self.__name} ({Table.__prep_labels(labels)})")
+        self.__connector.commit()
+        self.__table_labels = labels
+        self.__is_loaded = True
+
 
     def get_column_names(self) -> List[str]:
         """
         Этот метод возвращает список, названий колонок
         :return: List[str]
         """
-        try:
-            self.__lock.acquire(True)
-            if not self.__is_loaded:
-                raise Exception(f"DataBase \'{self.__name}\' is not exist!. Try using \'Table.create_table\'.")
-            return list(self.__table_labels.keys())
-        finally:
-            self.__lock.release()
+        if not self.__is_loaded:
+            raise Exception(f"DataBase \'{self.__name}\' is not exist!. Try using \'Table.create_table\'.")
+        return list(self.__table_labels.keys())
 
     def get_from_cell(self, key: str, column_name: str):
         """
@@ -74,16 +66,12 @@ class Table:
         :param column_name: Название колонки
         :return:
         """
-        try:
-            self.__lock.acquire(True)
-            if not self.__is_loaded:
-                raise Exception(f"DataBase \'{self.__name}\' is not exist!. Try using \'Table.create_table\'.")
-            if column_name not in self.__table_labels:
-                raise Exception(f"Column \'{column_name}\' not exist in table labels!")
-            self.__cursor.execute(f"SELECT {column_name} FROM {self.__name} WHERE {self.__primary_key} = '{key}'")
-            return self.__cursor.fetchone()[0]
-        finally:
-            self.__lock.release()
+        if not self.__is_loaded:
+            raise Exception(f"DataBase \'{self.__name}\' is not exist!. Try using \'Table.create_table\'.")
+        if column_name not in self.__table_labels:
+            raise Exception(f"Column \'{column_name}\' not exist in table labels!")
+        self.__cursor.execute(f"SELECT {column_name} FROM {self.__name} WHERE {self.__primary_key} = '{key}'")
+        return self.__cursor.fetchone()[0]
 
     def set_to_cell(self, key: str, column_name: str, new_value: Any, commit: bool = True) -> None:
         """
@@ -94,17 +82,13 @@ class Table:
         :param commit: Нужно ли сохранение
         :return:
         """
-        try:
-            self.__lock.acquire(True)
-            if not self.__is_loaded:
-                raise Exception(f"DataBase \'{self.__name}\' is not exist!. Try using \'Table.create_table\'.")
-            if column_name not in self.__table_labels:
-                raise Exception(f"Column \'{column_name}\' not exist in table labels!")
-            self.__cursor.execute(f"UPDATE {self.__name} SET {column_name} = '{new_value}' WHERE {self.__primary_key} = '{key}'")
-            if commit:
-                self.__connector.commit()
-        finally:
-            self.__lock.release()
+        if not self.__is_loaded:
+            raise Exception(f"DataBase \'{self.__name}\' is not exist!. Try using \'Table.create_table\'.")
+        if column_name not in self.__table_labels:
+            raise Exception(f"Column \'{column_name}\' not exist in table labels!")
+        self.__cursor.execute(f"UPDATE {self.__name} SET {column_name} = '{new_value}' WHERE {self.__primary_key} = '{key}'")
+        if commit:
+            self.__connector.commit()
 
     def add_row(self, row: list, commit: bool = True) -> None:
         """
@@ -113,19 +97,15 @@ class Table:
         :param commit: Стоит ли коммитить (зачастую коммит нужен 1 раз в 10-100 операций)
         :return: None
         """
-        try:
-            self.__lock.acquire(True)
-            if not self.__is_loaded:
-                raise Exception(f"DataBase \'{self.__name}\' is not exist!. Try using \'Table.create_table\'.")
-            if len(row) != len(self.__table_labels):
-                raise Exception(f"There are only {len(self.__table_labels)} columns in the database "
-                                f"\'{self.__name}\', and you are trying to write {len(row)}")
-            values = ", ".join(["'" + str(i) + "'" for i in row])
-            self.__cursor.execute(f"INSERT INTO {self.__name} VALUES ({values})")
-            if commit:
-                self.__connector.commit()
-        finally:
-            self.__lock.release()
+        if not self.__is_loaded:
+            raise Exception(f"DataBase \'{self.__name}\' is not exist!. Try using \'Table.create_table\'.")
+        if len(row) != len(self.__table_labels):
+            raise Exception(f"There are only {len(self.__table_labels)} columns in the database "
+                            f"\'{self.__name}\', and you are trying to write {len(row)}")
+        values = ", ".join(["'" + str(i) + "'" for i in row])
+        self.__cursor.execute(f"INSERT INTO {self.__name} VALUES ({values})")
+        if commit:
+            self.__connector.commit()
 
     def get_row(self, key: str) -> Dict[str, Any]:
         """
@@ -133,20 +113,16 @@ class Table:
         :param key: Идентификатор пользователя
         :return: tuple
         """
-        try:
-            self.__lock.acquire(True)
-            if not self.__is_loaded:
-                raise Exception(f"DataBase \'{self.__name}\' is not exist!. Try using \'Table.create_table\'.")
-            self.__cursor.execute(f"SELECT * FROM {self.__name} WHERE {self.__primary_key} = '{key}'")
-            request = self.__cursor.fetchall()
-            if len(request) == 0:
-                raise Exception("There are no values for this query!")
-            if len(request[0]) != len(self.get_column_names()):
-                raise Exception("The number of columns and values does not match!"
-                                f"{len(self.get_column_names())} columns and {len(request[0])} values were detected!")
-            return {column: value for column, value in zip(self.get_column_names(), request[0])}
-        finally:
-            self.__lock.release()
+        if not self.__is_loaded:
+            raise Exception(f"DataBase \'{self.__name}\' is not exist!. Try using \'Table.create_table\'.")
+        self.__cursor.execute(f"SELECT * FROM {self.__name} WHERE {self.__primary_key} = '{key}'")
+        request = self.__cursor.fetchall()
+        if len(request) == 0:
+            raise Exception("There are no values for this query!")
+        if len(request[0]) != len(self.get_column_names()):
+            raise Exception("The number of columns and values does not match!"
+                            f"{len(self.get_column_names())} columns and {len(request[0])} values were detected!")
+        return {column: value for column, value in zip(self.get_column_names(), request[0])}
 
     def delete_row(self, key: str) -> None:
         """
@@ -154,14 +130,10 @@ class Table:
         :param key: Идентификатор пользователя
         :return: None
         """
-        try:
-            self.__lock.acquire(True)
-            if not self.__is_loaded:
-                raise Exception(f"DataBase \'{self.__name}\' is not exist!. Try using \'Table.create_table\'.")
-            self.__cursor.execute(f"DELETE FROM {self.__name} WHERE {self.__primary_key} = '{key}'")
-            self.__connector.commit()
-        finally:
-            self.__lock.release()
+        if not self.__is_loaded:
+            raise Exception(f"DataBase \'{self.__name}\' is not exist!. Try using \'Table.create_table\'.")
+        self.__cursor.execute(f"DELETE FROM {self.__name} WHERE {self.__primary_key} = '{key}'")
+        self.__connector.commit()
 
     def get_column(self, column_name: str) -> List[Any]:
         """
@@ -169,30 +141,22 @@ class Table:
         :param column_name: Название колонки
         :return: Список значений в колонке
         """
-        try:
-            self.__lock.acquire(True)
-            if not self.__is_loaded:
-                raise Exception(f"DataBase \'{self.__name}\' is not exist!. Try using \'Table.create_table\'.")
-            if column_name not in self.__table_labels:
-                raise Exception(f"Column \'{column_name}\' not exist in table labels!")
-            self.__cursor.execute(f"SELECT {column_name} FROM {self.__name}")
-            return [sfa[0] for sfa in self.__cursor.fetchall()]
-        finally:
-            self.__lock.release()
+        if not self.__is_loaded:
+            raise Exception(f"DataBase \'{self.__name}\' is not exist!. Try using \'Table.create_table\'.")
+        if column_name not in self.__table_labels:
+            raise Exception(f"Column \'{column_name}\' not exist in table labels!")
+        self.__cursor.execute(f"SELECT {column_name} FROM {self.__name}")
+        return [sfa[0] for sfa in self.__cursor.fetchall()]
 
     def get_all_UIDs(self) -> List[Any]:
         """
         Этот метод возвращяет все значения индексаторов (столбец, который является уникальным, для каждого пользователя)
         :return: Список этих самых идентификаторов
         """
-        try:
-            self.__lock.acquire(True)
-            if not self.__is_loaded:
-                raise Exception(f"DataBase \'{self.__name}\' is not exist!. Try using \'Table.create_table\'.")
-            self.__cursor.execute(f"SELECT {self.__primary_key} FROM {self.__name}")
-            return [sfa[0] for sfa in self.__cursor.fetchall()]
-        finally:
-            self.__lock.release()
+        if not self.__is_loaded:
+            raise Exception(f"DataBase \'{self.__name}\' is not exist!. Try using \'Table.create_table\'.")
+        self.__cursor.execute(f"SELECT {self.__primary_key} FROM {self.__name}")
+        return [sfa[0] for sfa in self.__cursor.fetchall()]
 
     def commit(self) -> None:
         """
