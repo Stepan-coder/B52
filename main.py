@@ -476,7 +476,7 @@ def add_company_location(company_id: str) -> jsonify:
                     name=api_json['name'],
                     floor=api_json['floor'],
                     room=api_json['room'],
-                    url=f"/get_image/{location_id}.png")
+                    url=f"/api/get_image/{location_id}.png")
     db.get_table('company').set_to_cell(key=company_id,
                                         column_name="locations",
                                         new_value=",".join(list(filter(None, company['locations'].split(",") +
@@ -485,7 +485,7 @@ def add_company_location(company_id: str) -> jsonify:
                     "name": api_json['name'],
                     "floor": api_json['floor'],
                     "room": api_json['room'],
-                    "url": f"/get_image/{location_id}.png"})
+                    "url": f"/api/get_image/{location_id}.png"})
 
 
 @app.route('/api/company/<string:company_id>/location/<string:location_id>', methods=['GET'])
@@ -636,7 +636,7 @@ def get_company_categories(company_id: str) -> jsonify:
     return jsonify({"items": categories})
 
 
-@app.route('/get_image/<string:image>.png', methods=['GET'])
+@app.route('/api/get_image/<string:image>.png', methods=['GET'])
 @cross_origin()
 def get_image(image: str) -> send_file:
     if not check_api_key():
