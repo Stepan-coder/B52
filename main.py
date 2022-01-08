@@ -362,7 +362,6 @@ def set_company_task(company_id: str, task_id: str) -> jsonify:
         return jsonify(message='Company not founded!'), 401
     if task_id not in db.get_table("task").get_all_UIDs():
         return jsonify(message='Task not founded!'), 401
-    print()
     db.get_table("task").set_to_cell(key=task_id, column_name="description", new_value=api_json['description'])
     db.get_table("task").set_to_cell(key=task_id, column_name="status", new_value=api_json['status'])
     db.get_table("task").set_to_cell(key=task_id, column_name="create_at", new_value=api_json['create_at'])
@@ -373,8 +372,8 @@ def set_company_task(company_id: str, task_id: str) -> jsonify:
                                      column_name="category",
                                      new_value=api_json["category"]['id'] if api_json["category"] is not None else "")
     db.get_table("task").set_to_cell(key=task_id,
-                                     column_name="location",
-                                     new_value=api_json["location"]['id'] if api_json["location"] is not None else "")
+                                     column_name="executor",
+                                     new_value=api_json["executor"]['id'] if api_json["executor"] is not None else "")
     return get_company_task(company_id=company_id, task_id=task_id).get_json()
 
 
